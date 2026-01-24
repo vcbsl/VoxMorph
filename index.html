@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="VoxMorph: Scalable Zero-Shot Voice Identity Morphing via Disentangled Embeddings - ICASSP 2026">
+  <meta name="keywords" content="Voice Morphing, Zero-Shot, TTS, Voice Conversion, Biometrics, ICASSP">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VoxMorph: Scalable Zero-Shot Voice Identity Morphing</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="assets/images/icon.png" type="image/png">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Noto+Sans:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  
+  <!-- Bulma CSS (CDN) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+
+  <!-- MathJax for Equations -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #101529;
+      --card-bg: #1e2538;
+      --accent-primary: #4facfe;   /* Lighter Blue */
+      --accent-secondary: #00f2fe; /* Cyan */
+      --text-main: #ffffff;
+      --text-muted: #b5b5b5;
+      --border-color: #2c3e50;
+      --header-gradient: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Google Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    
+    a { color: var(--accent-primary); transition: color 0.3s; }
+    a:hover { color: var(--accent-secondary); }
+    
+    .title { color: var(--text-main) !important; font-weight: 700; }
+    .subtitle { color: var(--text-muted) !important; }
+    
+    /* Hero Gradient Text */
+    .publication-title {
+      font-family: 'Google Sans', sans-serif;
+      font-weight: 800;
+      background: var(--header-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0rem; /* Removed bottom margin */
+      letter-spacing: -1px;
+    }
+
+    .publication-authors { color: #dbdbdb !important; }
+    .author-block a { color: var(--text-main); text-decoration: none; border-bottom: 1px dotted var(--accent-primary); transition: border 0.3s;}
+    .author-block a:hover { border-bottom: 1px solid var(--accent-secondary); }
+
+    /* Buttons */
+    .button.is-dark {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      transition: all 0.3s ease;
+    }
+    .button.is-dark:hover {
+      background-color: var(--border-color);
+      border-color: var(--accent-primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(79, 172, 254, 0.2);
+    }
+
+    /* Hero Section - Significantly Reduced Padding */
+    .hero { padding-top: 1.5rem; padding-bottom: 0rem; }
+    .hero-body { padding-bottom: 1.5rem; }
+
+    /* Architecture Image - Pulled up closer */
+    .teaser-container {
+      position: relative;
+      padding: 1rem;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #1e2538, #161b2e);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      border: 1px solid var(--border-color);
+      margin-top: -2rem; /* Stronger negative margin to reduce gap */
+    }
+    .teaser-image {
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+
+    /* Audio Player Styling */
+    .audio-row {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-color);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .audio-row:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      border-color: var(--accent-primary);
+    }
+    
+    audio {
+      width: 100%;
+      height: 36px;
+      margin-top: 8px;
+      border-radius: 18px;
+    }
+    audio::-webkit-media-controls-panel { background-color: #101529; }
+    
+    .audio-label {
+      font-size: 0.85rem;
+      color: var(--accent-primary);
+      font-weight: 700;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Table Styling */
+    .table-container {
+      overflow-x: auto;
+      margin-bottom: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .results-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background-color: var(--card-bg);
+      font-size: 0.95rem;
+    }
+    
+    .results-table th, .results-table td {
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+      color: #e0e0e0;
+      min-width: 80px;
+    }
+
+    /* HEADER FIX: Same color as Title (Gradient) */
+    .results-table thead tr {
+      background: var(--header-gradient);
+      border-bottom: 2px solid #fff;
+    }
+    
+    .results-table th {
+      color: #000; /* Black text for contrast on Cyan/Blue header */
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      vertical-align: middle;
+    }
+
+    .results-table tbody tr:hover {
+      background-color: #252d42;
+    }
+    
+    /* Best Score Highlighting with Star */
+    .best-score {
+      color: #00ff88; /* Bright Green */
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .best-score::after {
+      content: "★";
+      color: #00ff88;
+      font-size: 0.9em;
+      margin-left: 0.15em;
+    }
+
+    /* Section Styling */
+    .section-title {
+      border-bottom: 2px solid var(--border-color);
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      color: var(--accent-secondary);
+    }
+
+    .hr { 
+      width: 100%; 
+      height: 1px; 
+      margin: 10px 0; 
+      background: linear-gradient(90deg, transparent, var(--border-color), transparent); 
+    }
+
+    /* Math Block Styling */
+    .math-block {
+      background-color: #141b2d;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid var(--accent-primary);
+      overflow-x: auto;
+      text-align: center;
+    }
+
+    /* Animations */
+    .fade-in-section {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+      will-change: opacity, visibility;
+    }
+    .fade-in-section.is-visible {
+      opacity: 1;
+      transform: none;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          
+          <h1 class="title is-1 publication-title">VOXMORPH</h1>
+          <h1 class="title is-3" style="color: white; margin-top: -10px; font-weight: 500;"> 
+            Scalable Zero-Shot Voice Identity Morphing via Disentangled Embeddings
+          </h1>
+          
+          <div class="is-size-4" style="color: var(--accent-secondary); margin-bottom: 15px; font-weight: 700;">
+            ICASSP 2026
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://github.com/Bharath-K3" target="_blank">Bharath Krishnamurthy</a><sup>*</sup>,&nbsp;&nbsp;
+            </span>
+            <span class="author-block">
+              <a href="#" target="_blank">Ajita Rattani</a><sup>*</sup>
+            </span>
+          </div>
+
+          <div class="is-size-6 publication-authors" style="color: #a0a0a0; margin-top: 10px;">
+            <span class="author-block">University of North Texas</span>
+          </div>
+
+          <div class="column has-text-centered" style="margin-top: 1.2rem;">
+            <div class="publication-links">
+              <!-- Paper Link -->
+              <span class="link-block">
+                <a href="#" target="_blank" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="ai ai-arxiv"></i></span>
+                  <span>Paper</span>
+                </a>
+              </span>
+
+              <!-- Code Link -->
+              <span class="link-block"> 
+                <a href="https://github.com/Bharath-K3/VoxMorph" target="_blank" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fab fa-github"></i></span>
+                  <span>Code</span>
+                </a>
+              </span>
+
+              <!-- Demo Link -->
+              <span class="link-block">
+                <a href="https://huggingface.co/spaces/BharathK333/VoxMorph" target="_blank" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-play-circle"></i></span>
+                  <span>Demo</span>
+                </a>
+              </span>
+
+              <!-- Dataset Link -->
+              <span class="link-block">
+                <a href="https://huggingface.co/datasets/BharathK333/VoxMorph-Dataset" target="_blank" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-database"></i></span>
+                  <span>Dataset</span>
+                </a>
+              </span>
+
+              <!-- Lab Website Link -->
+              <span class="link-block">
+                <a href="https://vcbsl.github.io/lab-website/" target="_blank" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-flask"></i></span>
+                  <span>Lab Website</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Teaser / Abstract -->
+<section class="section fade-in-section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column">
+        <div class="teaser-container">
+          <img src="assets/VoxMorph_Teaser.jpg" alt="VoxMorph Architecture" class="teaser-image" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\'padding:40px; color:#aaa;\'>[Architecture Diagram Placeholder]<br><small>assets/VoxMorph_Teaser.jpg</small></div>'"/>
+        </div>
+        <div class="content has-text-justified" style="color: #cccccc; margin-top: 15px; font-size: 0.95rem;">
+          <b>Figure 1:</b> Architectural overview of the VoxMorph framework. The process consists of three core stages: 
+          (1) <b>Extraction</b> of disentangled prosody and timbre embeddings; 
+          (2) <b>Interpolation</b> via Spherical Linear Interpolation (Slerp); and 
+          (3) <b>Synthesis</b> via an autoregressive language model and Conditional Flow Matching (CFM) network.
+        </div>
+      </div>
+    </div>
+    
+    <br>
+
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3 section-title">Abstract</h2>
+        <div class="content has-text-justified" style="color: #e0e0e0; line-height: 1.7;">
+          <p>
+            Morphing attacks threaten biometric security by creating synthetic samples that can impersonate multiple individuals. While extensively studied for face recognition, this vulnerability remains largely unexplored for voice biometrics. The only prior work on voice morphing is computationally expensive, non-scalable, and restricted to acoustically similar identity pairs. We propose <b>VoxMorph</b>, a novel zero-shot framework that generates high-fidelity voice morphs from as little as five seconds of audio per subject, without model retraining. Our approach disentangles vocal characteristics into prosody and timbre embeddings, enabling fine-grained interpolation of speaking style and identity. These embeddings are blended via <b>Spherical Linear Interpolation (Slerp)</b> and synthesized through an autoregressive language model (LM) together with a Conditional Flow Matching (CFM) network. VoxMorph achieves SOTA results, outperforming existing methods with a \(2.6\times\) improvement in audio quality, a 73% reduction in intelligibility errors, and a 67.8% morphing attack success rate on the automated speaker verification (ASV) system at strict security thresholds.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hr"></div>
+
+<!-- Methodology Section -->
+<section class="section fade-in-section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered section-title">Methodology</h2>
+    
+    <div class="content">
+      <p style="color: #dbdbdb;">
+        VoxMorph is a zero-shot framework that overcomes the limitations of prior VIM models. We leverage a dual-encoder architecture to disentangle voice into <b>Prosody</b> (speaking style) and <b>Timbre</b> (vocal identity), then fuse them using Slerp to guide a multi-stage synthesis pipeline.
+      </p>
+
+      <h3 class="title is-4" style="color: var(--accent-primary); margin-top: 30px;">1. Disentangled Vocal Feature Extraction</h3>
+      <p style="color: #b5b5b5;">
+        From a minimal duration audio sample (\(\geq\)5s), we extract:
+        <ul>
+          <li><b>Prosody Embedding (\(\mathbf{e}^{P}_i\)):</b> Captures high-level speaking style (rhythm, pitch).</li>
+          <li><b>Timbre Embedding (\(\mathbf{e}^{T}_i\)):</b> Encodes core biometric identity (vocal tract texture, formants).</li>
+        </ul>
+      </p>
+
+      <h3 class="title is-4" style="color: var(--accent-primary); margin-top: 30px;">2. Slerp Interpolation</h3>
+      <p style="color: #b5b5b5;">
+        Since embeddings reside on a high-dimensional hypersphere, we employ Spherical Linear Interpolation (Slerp) to fuse the prosody and timbre representations independently. This preserves vector magnitude and traverses the geodesic arc, minimizing audio artifacts:
+      </p>
+      
+      <div class="math-block">
+        $$ \mathbf{e}^{(X)}_\alpha = \frac{\sin((1-\alpha)\Omega)}{\sin(\Omega)}\mathbf{e}^{(X)}_A + \frac{\sin(\alpha\Omega)}{\sin(\Omega)}\mathbf{e}^{(X)}_B $$       </div>
+      <p style="font-size: 0.9rem; color: #888; text-align: center;">where \(X \in \{P,T\}\) and \(\Omega\) is the angle between source embeddings.</p>
+
+      <h3 class="title is-4" style="color: var(--accent-primary); margin-top: 30px;">3. Multi-Stage Synthesis</h3>
+      <p style="color: #b5b5b5;">
+        The fused embeddings guide a three-stage pipeline to generate the morphed waveform \(W_\alpha\):
+      </p>
+      <ol style="color: #b5b5b5;">
+        <li><b>Acoustic Token Generation:</b> An autoregressive LM generates discrete tokens conditioned on \(\mathbf{e}^{P}_\alpha\).</li>
+        <li><b>Mel-Spectrogram Synthesis:</b> A Conditional Flow Matching (CFM) model renders the spectrogram conditioned on \(\mathbf{e}^{T}_\alpha\).</li>
+        <li><b>Waveform Synthesis:</b> A HiFTNet vocoder converts the spectrogram to high-fidelity audio.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<div class="hr"></div>
+
+<!-- Audio Demos -->
+<section class="section fade-in-section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered section-title">Audio Demonstrations</h2>
+    <p class="has-text-centered" style="color: var(--text-muted); margin-bottom: 40px;">
+      Zero-shot morphing results using unseen speakers from Librispeech.
+    </p>
+
+    <!-- Pair 1 -->
+    <div class="audio-row">
+      <div class="columns is-vcentered is-mobile">
+        <div class="column is-3 has-text-centered">
+          <span class="audio-label">Source A</span>
+          <audio controls src="audio/pair1_source_a.wav"></audio>
+        </div>
+        <div class="column is-1 has-text-centered" style="color: var(--accent-primary);">
+          <i class="fas fa-arrow-right fa-lg"></i>
+        </div>
+        <div class="column is-4 has-text-centered" style="border: 2px solid var(--accent-primary); border-radius: 8px; padding: 15px 5px; background: rgba(79, 172, 254, 0.1);">
+          <span class="audio-label" style="color: var(--accent-secondary);">Morph</span>
+          <audio controls src="audio/pair1_morph.wav"></audio>
+        </div>
+        <div class="column is-1 has-text-centered" style="color: var(--accent-primary);">
+          <i class="fas fa-arrow-left fa-lg"></i>
+        </div>
+        <div class="column is-3 has-text-centered">
+          <span class="audio-label">Source B</span>
+          <audio controls src="audio/pair1_source_b.wav"></audio>
+        </div>
+      </div>
+      <p class="has-text-centered is-size-7" style="color: #666; margin-top: 10px;">Example 1: Female-to-Female Morphing</p>
+    </div>
+
+    <!-- Pair 2 -->
+    <div class="audio-row">
+      <div class="columns is-vcentered is-mobile">
+        <div class="column is-3 has-text-centered">
+          <span class="audio-label">Source A</span>
+          <audio controls src="audio/pair2_source_a.wav"></audio>
+        </div>
+        <div class="column is-1 has-text-centered" style="color: var(--accent-primary);">
+          <i class="fas fa-arrow-right fa-lg"></i>
+        </div>
+        <div class="column is-4 has-text-centered" style="border: 2px solid var(--accent-primary); border-radius: 8px; padding: 15px 5px; background: rgba(79, 172, 254, 0.1);">
+          <span class="audio-label" style="color: var(--accent-secondary);">Morph</span>
+          <audio controls src="audio/pair2_morph.wav"></audio>
+        </div>
+        <div class="column is-1 has-text-centered" style="color: var(--accent-primary);">
+          <i class="fas fa-arrow-left fa-lg"></i>
+        </div>
+        <div class="column is-3 has-text-centered">
+          <span class="audio-label">Source B</span>
+          <audio controls src="audio/pair2_source_b.wav"></audio>
+        </div>
+      </div>
+      <p class="has-text-centered is-size-7" style="color: #666; margin-top: 10px;">Example 2: Male-to-Male Morphing</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- Results Section -->
+<section class="section fade-in-section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered section-title">Quantitative Results</h2>
+    
+    <!-- Table 1: Main Results -->
+    <div class="content">
+      <p style="color: #e0e0e0; margin-bottom: 10px;">
+        <strong>Table 1:</strong> Comparison with state-of-the-art audio morphing methods. VoxMorph-v2 demonstrates superior performance in quality (FAD), intelligibility (WER), and morphing attack success (FMMPMR).
+      </p>
+      <div class="table-container">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th rowspan="2" style="min-width: 140px;">Method</th>
+              <th colspan="2">FAD <br><small>(Lower is better)</small></th>
+              <th rowspan="2">KLD <br><small>(Lower)</small></th>
+              <th rowspan="2">WER <br><small>(Lower)</small></th>
+              <th colspan="3">MMPMR (%) <br><small>(Higher is better)</small></th>
+              <th colspan="3">FMMPMR (%) <br><small>(Higher is better)</small></th>
+            </tr>
+            <tr>
+              <th>(Vs Real)</th>
+              <th>(Vs Clone)</th>
+              <th>@ 0.01%</th>
+              <th>@ 0.1%</th>
+              <th>@ 1%</th>
+              <th>@ 0.01%</th>
+              <th>@ 0.1%</th>
+              <th>@ 1%</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>MorphFader <br><small>(Texture)</small></td>
+              <td>8.96</td>
+              <td>0.25</td>
+              <td>0.4332</td>
+              <td>1.84</td>
+              <td colspan="3">-</td>
+              <td colspan="3">-</td>
+            </tr>
+            <tr>
+              <td>Vevo <br><small>(Imitation)</small></td>
+              <td>9.14</td>
+              <td>0.63</td>
+              <td>0.1899</td>
+              <td>0.54</td>
+              <td>82.40</td>
+              <td>94.60</td>
+              <td>98.80</td>
+              <td>9.00</td>
+              <td>44.00</td>
+              <td>85.60</td>
+            </tr>
+            <tr>
+              <td>ViM <br><small>(Baseline)</small></td>
+              <td>7.52</td>
+              <td>1.52</td>
+              <td>0.3501</td>
+              <td>1.06</td>
+              <td>2.61</td>
+              <td>29.66</td>
+              <td>89.38</td>
+              <td>0.00</td>
+              <td>5.61</td>
+              <td>52.10</td>
+            </tr>
+            <tr style="background-color: rgba(79, 172, 254, 0.05); border-top: 1px solid #4facfe;">
+              <td style="color: var(--accent-primary); font-weight: 700;">VoxMorph-v1</td>
+              <td class="second-best">5.03</td>
+              <td class="best-score">0.24</td>
+              <td>0.1404</td>
+              <td>0.33</td>
+              <td>78.60</td>
+              <td>98.40</td>
+              <td>100.0</td>
+              <td>60.60</td>
+              <td>96.00</td>
+              <td>99.80</td>
+            </tr>
+            <tr style="background-color: rgba(79, 172, 254, 0.1); border-bottom: 2px solid #4facfe;">
+              <td style="color: var(--accent-primary); font-weight: 700;">VoxMorph-v2</td>
+              <td class="best-score">4.90</td>
+              <td>0.27</td>
+              <td class="best-score">0.1385</td>
+              <td class="best-score">0.19</td>
+              <td class="best-score">99.80</td>
+              <td class="best-score">100.0</td>
+              <td class="best-score">100.0</td>
+              <td class="best-score">67.80</td>
+              <td class="best-score">97.20</td>
+              <td class="best-score">100.0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <!-- Table 2: Ablation Study (Interpolation) -->
+    <h3 class="title is-4" style="color: #fff; margin-top: 40px;">Ablation Study: Interpolation Method</h3>
+    <div class="content">
+      <p style="color: #e0e0e0; margin-bottom: 10px;">
+        <strong>Table 2:</strong> Impact of different interpolation strategies. Slerp preserves the geometric structure of the hypersphere, minimizing audio artifacts.
+      </p>
+      <div class="table-container">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>FAD <br><small>(Lower)</small></th>
+              <th>WER <br><small>(Lower)</small></th>
+              <th>KLD <br><small>(Lower)</small></th>
+              <th colspan="2">FMMPMR (%) <br><small>(Higher)</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Linear Averaging</td>
+              <td>5.03</td>
+              <td class="best-score">0.1917</td>
+              <td>0.1854</td>
+              <td>34.80</td>
+              <td>83.80</td>
+            </tr>
+            <tr>
+              <td>Lerp (Linear Interpolation)</td>
+              <td>4.96</td>
+              <td>0.1928</td>
+              <td>0.1838</td>
+              <td>62.60</td>
+              <td>96.80</td>
+            </tr>
+            <tr>
+              <td>Lerp (Prosody) + Slerp (Timbre)</td>
+              <td>5.58</td>
+              <td>0.1971</td>
+              <td>0.1826</td>
+              <td>62.80</td>
+              <td>96.00</td>
+            </tr>
+            <tr>
+              <td>Slerp (Prosody) + Lerp (Timbre)</td>
+              <td>5.06</td>
+              <td>0.1926</td>
+              <td>0.1813</td>
+              <td>62.60</td>
+              <td>97.20</td>
+            </tr>
+            <tr style="background-color: rgba(79, 172, 254, 0.1); border-bottom: 2px solid #4facfe;">
+              <td style="color: var(--accent-primary); font-weight: 700;">Slerp (VoxMorph)</td>
+              <td class="best-score">4.90</td>
+              <td>0.1920</td>
+              <td class="best-score">0.1385</td>
+              <td class="best-score">67.80</td>
+              <td class="best-score">97.20</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Table 3: Ablation Study (Encoder) -->
+    <h3 class="title is-4" style="color: #fff; margin-top: 40px;">Ablation Study: Prosody Encoder</h3>
+    <div class="content">
+      <p style="color: #e0e0e0; margin-bottom: 10px;">
+        <strong>Table 3:</strong> Analysis of different encoder architectures. The LSTM-based GE2E architecture achieves superior FMMPMR.
+      </p>
+      <div class="table-container">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th rowspan="2">Encoder</th>
+              <th colspan="2">MMPMR (%)</th>
+              <th colspan="2">FMMPMR (%)</th>
+            </tr>
+            <tr>
+              <th>@ 0.01%</th>
+              <th>@ 0.1%</th>
+              <th>@ 0.01%</th>
+              <th>@ 0.1%</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background-color: rgba(79, 172, 254, 0.1); border-bottom: 2px solid #4facfe;">
+              <td style="color: var(--accent-primary); font-weight: 700;">GE2E <br><small>(Ours)</small></td>
+              <td class="best-score">78.60</td>
+              <td>98.40</td>
+              <td class="best-score">60.60</td>
+              <td class="best-score">96.00</td>
+            </tr>
+            <tr>
+              <td>ECAPA-TDNN</td>
+              <td>72.20</td>
+              <td>98.40</td>
+              <td>48.20</td>
+              <td>93.00</td>
+            </tr>
+            <tr>
+              <td>HuBERT</td>
+              <td>75.40</td>
+              <td class="best-score">99.00</td>
+              <td>48.40</td>
+              <td>91.20</td>
+            </tr>
+            <tr>
+              <td>Wav2Vec2</td>
+              <td>75.80</td>
+              <td>98.80</td>
+              <td>47.60</td>
+              <td>90.60</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Additional Results Section -->
+    <section class="section fade-in-section">
+    <div class="container is-max-desktop">
+        <h2 class="title is-3 has-text-centered section-title">Additional Results</h2>
+        
+        <div class="content">
+        <p style="color: #e0e0e0; margin-bottom: 10px;">
+            <strong>Table 4:</strong> Evaluation of Audio Morphing Using ECAPA-TDNN ASV. MMPMR and FMMPMR scores are reported at the 0.01% and 0.1% FAR thresholds.
+        </p>
+        <div class="table-container">
+            <table class="results-table">
+            <thead>
+                <tr>
+                <th rowspan="2">Method</th>
+                <th colspan="2">MMPMR (%)</th>
+                <th colspan="2">FMMPMR (%)</th>
+                </tr>
+                <tr>
+                <th>@ 0.01%</th>
+                <th>@ 0.1%</th>
+                <th>@ 0.01%</th>
+                <th>@ 0.1%</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                <td>ViM</td>
+                <td>50.60</td>
+                <td>69.00</td>
+                <td>14.80</td>
+                <td>27.80</td>
+                </tr>
+                <tr style="background-color: rgba(79, 172, 254, 0.1); border-bottom: 2px solid #4facfe;">
+                <td style="color: var(--accent-primary); font-weight: 700;">Ours</td>
+                <td class="best-score">62.60</td>
+                <td class="best-score">99.80</td>
+                <td class="best-score">76.60</td>
+                <td class="best-score">79.20</td>
+                </tr>
+            </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="hr" style="margin: 24px 0;"></div>
+
+        <p style="color: #e0e0e0; margin-bottom: 10px; margin-top: 20px;">
+        <strong>Table 5:</strong> Selected Best Similarity Pairs Analysis. FMMPMR and resulting MMPMR scores are reported at the 0.01% and 0.1% FAR thresholds.
+        </p>
+        <div class="table-container">
+        <table class="results-table">
+            <thead>
+            <tr>
+                <th rowspan="2">Method</th>
+                <th colspan="2">MMPMR (%)</th>
+                <th colspan="2">FMMPMR (%)</th>
+            </tr>
+            <tr>
+                <th>@ 0.01%</th>
+                <th>@ 0.1%</th>
+                <th>@ 0.01%</th>
+                <th>@ 0.1%</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>ViM</td>
+                <td>75.00</td>
+                <td>84.00</td>
+                <td>40.00</td>
+                <td>53.00</td>
+            </tr>
+            <tr style="background-color: rgba(79, 172, 254, 0.1); border-bottom: 2px solid #4facfe;">
+                <td style="color: var(--accent-primary); font-weight: 700;">Ours</td>
+                <td class="best-score">100.00</td>
+                <td class="best-score">100.00</td>
+                <td class="best-score">89.13</td>
+                <td class="best-score">100.00</td>
+            </tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Acknowledgments -->
+<section class="section fade-in-section">
+  <div class="container is-max-desktop has-text-centered">
+    <h2 class="title is-3 section-title">Acknowledgments</h2>
+    <div class="content has-text-centered" style="color: #e0e0e0;">
+      <p>
+        This research was supported by the University of North Texas. We thank the open-source community for foundational tools.
+      </p>
+      <ul style="list-style: none; padding: 0; color: var(--accent-primary);">
+        <li>Resemble AI & CosyVoice</li>
+        <li>Llama Community</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- BibTeX -->
+<section class="section fade-in-section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title" style="color: white;">BibTeX</h2>
+    <pre style="background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 15px; overflow-x: auto;"><code style="color: #c9d1d9; font-family: 'JetBrains Mono', monospace;">@inproceedings{krishnamurthy2026voxmorph,
+  title={VoxMorph: Scalable Zero-Shot Voice Identity Morphing via Disentangled Embeddings},
+  author={Krishnamurthy, Bharath and Rattani, Ajita},
+  booktitle={IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  year={2026}
+}</code></pre>
+  </div>
+</section>
+
+<footer class="footer" style="background-color: #0a0e1b; padding: 3rem 1.5rem; margin-top: 2rem;">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content has-text-centered">
+          <p style="color: #606060;">
+            Website template adapted from <a href="https://github.com/nerfies/nerfies.github.io" style="color: #606060; text-decoration: underline;">Nerfies</a>.
+            <br>
+            Copyright &copy; 2026 University of North Texas.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Simple Script for Scroll Animations -->
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Intersection Observer for fade-in animations
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1
+    };
+
+    const observer = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target); // Only animate once
+        }
+      });
+    }, observerOptions);
+
+    const sections = document.querySelectorAll('.fade-in-section');
+    sections.forEach(section => {
+      observer.observe(section);
+    });
+  });
+</script>
+
+</body>
+</html>
